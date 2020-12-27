@@ -1,0 +1,83 @@
+#!/bin/sh
+
+tmpdir=/dev/shm/mkpreview
+n=12
+s="320x200" 
+
+show_help() {
+    cat << EOF
+
+Usage: mkpreview [OPTIONS] /path/to/videofile
+
+   -h               show help
+   -n NUMBER        how many thumbnails to create, default $n
+   -s WIDTHxHEIGHT  size of thumbnails, default $s
+
+EOF
+}
+
+mkthumbnail() {
+    t=$(date -d@"$2" -u +%H:%M:%S)
+    tf=$tmpdir/$t.png
+    2>/dev/null ffmpeg -ss $2 -i "$1" -frames:v 1 -filter:v 'yadif' "$tf"
+    convert "$tf" -resize $3 -gravity south -splice 0x18 -annotate +0+5 "$t" "$tf" 
+}
+
+
+if [ "$#" -eq 0 ]; then
+    show_help
+    exit 1
+fi
+
+while getopts ":hn:s:" opt; do
+    case $opt in
+        h)
+            show_help
+            exit 0
+            ;;
+        n)
+            n="$OPTARG"
+            ;;
+    	s)
+            s="$OPTARG"
+            ;;
+        \?)
+      	    echo "Invalid option: -$OPTARG" >&2
+      	    exit 1
+      	    ;;
+    	:)
+      	    echo "Option -$OPTARG requires an argument." >&2
+      	    exit 1
+      	    ;;
+  	esac
+done
+
+shift "$((OPTIND-1))"
+
+mkdir $tmpdir
+
+drtn=$(echo "scale=0; \
+    $(ffprobe -i "$1" -show_entries format=duration -v quiet -of csv="p=0")/1"\
+    | bc)
+frame=$(echo "scale=0; $drtn/$n" | bc)
+for (( shft=frame; shft < drtn; shft=shft+frame ))
+do
+    # limit parallels 
+    if (( c == 0 )); then
+        c=$(nproc --all)-1
+        wait
+    fi
+    mkthumbnail "$1" $shft $s &
+    (( c-- ))
+done
+
+wait
+ 
+if find "$tmpdir" -mindepth 1 | read; then
+    montage -tile 3x -geometry +1+1 $tmpdir/*.png $tmpdir/output.png
+    display $tmpdir/output.png
+else
+    echo "No video"
+fi
+
+rm -rf $tmpdir/
