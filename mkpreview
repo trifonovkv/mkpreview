@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 tmpdir=/dev/shm/mkpreview
 n=12
