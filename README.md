@@ -4,8 +4,8 @@ Simple bash script for creating thumbnail video previews
 ![screenshot](https://github.com/trifonovkv/mkpreview/blob/main/screenshot.png)  
 
 ## Installation
-`curl https://raw.githubusercontent.com/trifonovkv/mkpreview/main/mkpreview --create-dirs -o ~/bin/mkpreview`
-`chmod +x ~/bin/mkpreview`
+`wget https://raw.githubusercontent.com/trifonovkv/mkpreview/main/mkpreview`   
+`chmod +x ./mkpreview`
 
 ## Usage
 `mkpreview [OPTIONS] /path/to/videofile`
